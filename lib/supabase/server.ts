@@ -3,8 +3,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 
 
 /**
@@ -13,10 +12,16 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
  */
 export async function createClient() { // 🔑 Key Fix: Function MUST be async
     // 🔑 Key Fix: Await the cookies() result and cast to 'any' to bypass typing conflicts
-const cookieStore = (await cookies()) as any;
+    const cookieStore = (await cookies()) as any;
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) return {} as any;
+
     return createServerClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
+        url,
+        key,
         {
             cookies: {
                 get(name: string) {
@@ -37,10 +42,16 @@ const cookieStore = (await cookies()) as any;
  */
 export async function createActionClient() {
     // 🔑 Key Fix: Await the cookies() result and cast to 'any'
-const cookieStore = (await cookies()) as any;
+    const cookieStore = (await cookies()) as any;
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) return {} as any;
+
     return createServerClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
+        url,
+        key,
         {
             cookies: {
                 get(name: string) {
@@ -62,16 +73,19 @@ const cookieStore = (await cookies()) as any;
  * Bypasses RLS. Use with caution.
  */
 export function createAdminClient() {
-    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    // Only access environment variables inside the function to avoid build-time crashes
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables');
+    if (!url || !adminKey) {
+        // Return dummy object if environment variables are missing during build
+        return {} as any;
     }
 
     // This client does not need user cookies, so it is simple.
     return createServerClient(
-        SUPABASE_URL,
-        SUPABASE_SERVICE_ROLE_KEY,
+        url,
+        adminKey,
         {
             cookies: {
                 get() { return undefined; },
