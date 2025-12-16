@@ -27,7 +27,8 @@ export default function MessagingToggle() {
         };
         init();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        // Adding ': any' tells TypeScript to stop worrying about the type of this parameter
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             setUser(session?.user ?? null);
         });
 
@@ -49,7 +50,7 @@ export default function MessagingToggle() {
 
             if (data) {
                 // Filter for message/chat related notifications
-                const messages = data.filter(n => {
+                const messages = data.filter((n: any) => {
                     const msg = (n.message || "").toLowerCase();
                     const url = (n.link_url || "").toLowerCase();
                     return msg.includes('message') || msg.includes('chat') || url.includes('/messages') || url.includes('/chat');
@@ -118,11 +119,11 @@ export default function MessagingToggle() {
             .eq('is_read', false); // Only unread
 
         if (data && data.length > 0) {
-            const messageIds = data.filter(n => {
+            const messageIds = data.filter((n: any) => {
                 const msg = (n.message || "").toLowerCase();
                 const url = (n.link_url || "").toLowerCase();
                 return msg.includes('message') || msg.includes('chat') || url.includes('/messages') || url.includes('/chat');
-            }).map(n => n.id);
+            }).map((n: any) => n.id);
 
             if (messageIds.length > 0) {
                 await supabase
