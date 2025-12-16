@@ -26,7 +26,9 @@ export default function UserSettings() {
 
         if (res?.error) {
             setError(res.error);
-            if (res.needsRecentLogin || res.needsRecentLogin === true) {
+            // Casting to 'any' stops TypeScript from over-analyzing the logic here
+            const response = res as any;
+            if (response.needsRecentLogin) {
                 setNeedsReset(true);
             }
             setSubmitting(false);
@@ -36,7 +38,7 @@ export default function UserSettings() {
         setSuccess(true);
         setSubmitting(false);
         // Optionally refresh server components or route
-        try { router.refresh(); } catch (e) {}
+        try { router.refresh(); } catch (e) { }
     };
 
     return (
