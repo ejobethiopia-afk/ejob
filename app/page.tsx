@@ -40,8 +40,8 @@ export default async function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {jobs && jobs.length > 0 ? (
             // Deduplicate jobs by title and company to avoid showing repeats
-            jobs.filter((job, index, self) =>
-              index === self.findIndex((t) => (
+            jobs.filter((job: Job, index: number, self: Job[]) =>
+              index === self.findIndex((t: Job) => (
                 t.title === job.title && t.company_name === job.company_name
               ))
             ).map((job: Job) => (
