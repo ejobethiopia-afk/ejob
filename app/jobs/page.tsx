@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import SaveJobButton from '@/components/save-job-button';
+import SaveJobButton from '@/components/SaveJobButton';
 
 interface Job {
   id: string;

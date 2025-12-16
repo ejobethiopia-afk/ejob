@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ApplyButton from '@/components/apply-button';
 import ApplicationForm from '@/components/ApplicationForm';
-import SaveJobButton from '@/components/save-job-button';
+import SaveJobButton from '@/components/SaveJobButton';
 import { Job } from '@/types';
 import { Eye, Layers } from 'lucide-react';
 import { getSavedStatus, submitApplicationWithForm } from '@/actions/job-actions';
