@@ -50,26 +50,25 @@ export async function uploadAvatarAction(formData: FormData) {
   if (uploadError) {
     console.error("Avatar upload error:", uploadError);
     const msg = uploadError?.message || "Failed to upload avatar";
-    if (uploadError?.status === 404 || uploadError?.statusCode === '404' || /bucket not found/i.test(msg)) {
+
+    // FIX: Cast to any to bypass TypeScript status error
+    const err = uploadError as any;
+    if (err.status === 404 || err.statusCode === '404' || /bucket not found/i.test(msg)) {
       return { error: `Bucket '${BUCKET}' not found. Run sql/avatars-setup.sql in your Supabase project to create the bucket named '${BUCKET}'.` };
     }
     return { error: msg };
   }
 
-  // For persistent avatar links prefer a public URL (bucket must be public).
-  // Use getPublicUrl to build the permanent public URL for the uploaded object.
-  const { data: publicData, error: publicError } = await adminClient.storage
+  const { data: publicData } = adminClient.storage
     .from(BUCKET)
     .getPublicUrl(path);
 
-  if (publicError || !publicData?.publicUrl) {
-    console.error("Get public URL error:", publicError);
-    return { error: publicError?.message || "Failed to create public URL" };
+  if (!publicData?.publicUrl) {
+    return { error: "Failed to create public URL" };
   }
 
   const publicUrl = publicData.publicUrl;
 
-  // Update the app_users table with the new avatar URL
   const { error: dbError } = await adminClient
     .from("app_users")
     .update({ avatar_url: publicUrl })
@@ -77,12 +76,11 @@ export async function uploadAvatarAction(formData: FormData) {
 
   if (dbError) {
     console.error("Failed to update app_users avatar_url:", dbError);
-    // Try fallback for possible misspelled column `avater_url`
     try {
       if (/column\s+"avatar_url"\s+does not exist/i.test(dbError.message || "")) {
         const { error: fallbackError } = await adminClient
           .from("app_users")
-          .update({ avater_url: publicUrl })
+          .update({ avater_url: publicUrl } as any) // Cast to any in case column is misspelled in DB
           .eq("id", user.id);
         if (!fallbackError) {
           console.warn("Fallback: updated avater_url column instead of avatar_url");
@@ -99,9 +97,7 @@ export async function uploadAvatarAction(formData: FormData) {
     }
   }
 
-  // Revalidate main path so header/navbar reflects the change
   revalidatePath("/");
-
   return { success: true, url: publicUrl };
 }
 
@@ -133,7 +129,7 @@ export async function uploadCompanyLogoAction(formData: FormData) {
   const adminClient = createAdminClient();
 
   const ext = file.name.split(".").pop() ?? "png";
-  const filename = `company-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const filename = `company-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const path = `${user.id}/${filename}`;
 
   const { error: uploadError } = await adminClient.storage
@@ -143,36 +139,36 @@ export async function uploadCompanyLogoAction(formData: FormData) {
   if (uploadError) {
     console.error("Company logo upload error:", uploadError);
     const msg = uploadError?.message || "Failed to upload company logo";
-    if (uploadError?.status === 404 || uploadError?.statusCode === '404' || /bucket not found/i.test(msg)) {
+
+    // FIX: Cast to any to bypass TypeScript status error
+    const err = uploadError as any;
+    if (err.status === 404 || err.statusCode === '404' || /bucket not found/i.test(msg)) {
       return { error: `Bucket '${STORAGE_BUCKET}' not found. Run sql/avatars-setup.sql in your Supabase project to create the bucket named '${STORAGE_BUCKET}'.` };
     }
     return { error: msg };
   }
 
-  const { data: publicData, error: publicError } = await adminClient.storage
+  const { data: publicData } = adminClient.storage
     .from(STORAGE_BUCKET)
     .getPublicUrl(path);
 
-  if (publicError || !publicData?.publicUrl) {
-    console.error("Create public URL error (company logo):", publicError);
-    return { error: publicError?.message || "Failed to create public URL" };
+  if (!publicData?.publicUrl) {
+    return { error: "Failed to create public URL" };
   }
 
   const publicUrl = publicData.publicUrl;
 
-  // Upsert employer_profiles with company_logo
   const { error: dbError } = await adminClient
     .from("employer_profiles")
     .upsert({ user_id: user.id, company_logo: publicUrl }, { onConflict: "user_id" });
 
   if (dbError) {
     console.error("Failed to upsert employer_profiles company_logo:", dbError);
-    // As a last resort, try writing to app_users.company_logo if schema is different
     try {
       if (/column\s+"company_logo"\s+does not exist/i.test(dbError.message || "")) {
         const { error: fallbackError } = await adminClient
           .from("app_users")
-          .update({ company_logo: publicUrl })
+          .update({ company_logo: publicUrl } as any)
           .eq("id", user.id);
         if (!fallbackError) {
           console.warn("Fallback: updated app_users.company_logo instead of employer_profiles.company_logo");
@@ -189,8 +185,6 @@ export async function uploadCompanyLogoAction(formData: FormData) {
     }
   }
 
-  // Revalidate dashboard/profile
   revalidatePath("/");
-
   return { success: true, url: publicUrl };
 }
