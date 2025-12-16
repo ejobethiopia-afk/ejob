@@ -44,7 +44,7 @@ export default function ChatMessages({ conversationId, currentUserId }: { conver
                 schema: 'public',
                 table: 'messages',
                 filter: `conversation_id=eq.${conversationId}`
-            }, (payload) => {
+            }, (payload: any) => {
                 setMessages((prev) => [...prev, payload.new as Message]);
             })
             .subscribe();
