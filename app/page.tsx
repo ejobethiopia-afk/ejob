@@ -15,6 +15,16 @@ export default async function Home() {
     .order('created_at', { ascending: false })
     .limit(50);
 
+  // 3. Check for Employer Role Redirect
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: appUser } = await supabase.from('app_users').select('role').eq('id', user.id).single();
+    if (appUser?.role === 'employer') {
+      const { redirect } = await import('next/navigation');
+      redirect('/dashboard');
+    }
+  }
+
   // Basic error handling
   if (error) {
     console.error('Error fetching jobs:', error);

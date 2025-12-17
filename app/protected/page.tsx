@@ -9,9 +9,7 @@ async function UserDetails() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
 
-  if (error || !data?.claims) {
-    redirect("/auth/login");
-  }
+  if (error || !data?.claims) redirect("/login");
 
   return JSON.stringify(data.claims, null, 2);
 }

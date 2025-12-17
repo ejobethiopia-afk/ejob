@@ -20,7 +20,7 @@ export function SessionManager() {
             timerRef.current = setTimeout(async () => {
                 // Sign out and redirect
                 await supabase.auth.signOut();
-                router.push("/auth/login");
+                router.push("/login");
             }, INACTIVITY_TIMEOUT);
         };
 

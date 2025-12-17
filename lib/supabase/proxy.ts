@@ -32,15 +32,31 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Define public auth routes that don't require authentication
+  const publicAuthRoutes = [
+    '/login',
+    '/sign-up',
+    '/forgot-password',
+    '/sign-up-success',
+    '/update-password',
+    '/auth/callback',
+    '/auth/confirm',
+    '/auth/error'
+  ];
+
+  const isPublicAuthRoute = publicAuthRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
   if (
     !user &&
     request.nextUrl.pathname !== "/" &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !isPublicAuthRoute
   ) {
     // no user, potentially respond by redirecting the user to the login page
     // For now we allow viewing the home page without login (pathname !== "/") check above
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 

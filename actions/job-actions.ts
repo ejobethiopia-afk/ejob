@@ -430,7 +430,20 @@ export async function postJobListing(formData: FormData) {
         redirect('/login');
     }
 
-    // Ensure employer role
+    // Verify CAPTCHA first
+    const captchaToken = formData.get("captchaToken") as string;
+    if (!captchaToken) {
+        throw new Error("CAPTCHA verification is required");
+    }
+
+    const { verifyCaptcha } = await import("@/actions/captcha-actions");
+    const captchaResult = await verifyCaptcha(captchaToken);
+
+    if (!captchaResult.success) {
+        throw new Error(captchaResult.error || "CAPTCHA verification failed");
+    }
+
+    // Ensure employer role - CRITICAL SECURITY CHECK
     const { data: appUser, error: roleError } = await supabase
         .from('app_users')
         .select('role')
@@ -441,7 +454,6 @@ export async function postJobListing(formData: FormData) {
         throw new Error('Unauthorized: Only employers can post jobs');
     }
 
-    // ... (previous code)
 
     const title = String(formData.get('title') ?? '').trim();
     const company_name = String(formData.get('company_name') ?? '').trim();
@@ -509,18 +521,7 @@ export async function postJobListing(formData: FormData) {
 export async function incrementJobView(jobId: string) {
     const supabase = await createActionClient();
 
-    // We use the 'rpc' call if a stored procedure existed, but since we are doing simple update:
-    // We will do a safe stored procedure call or just a raw SQL increment if possible.
-    // However, Supabase JS client doesn't support "increment" atomic operation directly without RPC.
-    // We will try to fetch and update. It helps that this is not high-concurrency critical.
-
     try {
-        /*
-           We use a stored procedure (RPC) to increment the view count.
-           This is necessary to bypass Row Level Security (RLS).
-           
-           User has created function: increment_job_views (plural)
-        */
         const { error: rpcError } = await supabase.rpc('increment_job_views', { job_id: jobId });
 
         if (rpcError) {
@@ -541,13 +542,155 @@ export async function incrementJobView(jobId: string) {
                 .eq('id', jobId);
         }
 
-        // Revalidate the homepage to show updated view counts
         revalidatePath('/');
-        // Also revalidate the job page itself although client might already show it
         revalidatePath(`/jobs/${jobId}`);
 
     } catch (e) {
-        // Ignore errors for analytics
         console.error('Failed to increment view', e);
+    }
+}
+
+/**
+ * Updates an existing job listing.
+ * @param formData The form data containing job details.
+ */
+export async function updateJob(formData: FormData) {
+    const supabase = await createActionClient();
+
+    // 1. Authenticate
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        redirect('/login');
+    }
+
+    // 1.5 Verify employer role - CRITICAL SECURITY CHECK
+    const { data: appUser, error: roleError } = await supabase
+        .from('app_users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (roleError || !appUser || appUser.role !== 'employer') {
+        throw new Error('Unauthorized: Only employers can update jobs');
+    }
+
+    // 2. Extract Data
+    const jobId = formData.get('jobId') as string;
+    if (!jobId || !isUUID(jobId)) {
+        throw new Error('Invalid Job ID');
+    }
+
+    const title = String(formData.get('title') ?? '').trim();
+    const company_name = String(formData.get('company_name') ?? '').trim();
+    const location = String(formData.get('location') ?? '').trim();
+    const salary = String(formData.get('salary') ?? '').trim();
+    const salary_min = parseInt(String(formData.get('salary_min') ?? '0'), 10) || 0;
+    const salary_max = parseInt(String(formData.get('salary_max') ?? '0'), 10) || 0;
+    const category = String(formData.get('category') ?? '').trim();
+    const type = String(formData.get('type') ?? 'Full-time').trim();
+    const description = String(formData.get('description') ?? '').trim();
+    const experience_level = String(formData.get('experience_level') ?? '').trim();
+    const required_skills = String(formData.get('required_skills') ?? '').trim();
+    const application_deadline = String(formData.get('application_deadline') ?? '').trim();
+
+    if (!title || !description || !company_name || !category) {
+        throw new Error('Title, Company Name, Category, and Description are required.');
+    }
+
+    // 3. Verify Ownership (and implicitly role)
+    // We check if a job exists with this ID AND this employer_id
+    const { data: existingJob, error: checkError } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('id', jobId)
+        .eq('employer_id', user.id)
+        .single();
+
+    if (checkError || !existingJob) {
+        throw new Error('Job not found or you are not authorized to edit it.');
+    }
+
+    // 4. Update
+    const { error: updateError } = await supabase
+        .from('jobs')
+        .update({
+            title,
+            company_name,
+            location,
+            salary,
+            salary_min,
+            salary_max,
+            category,
+            type,
+            description,
+            experience_level: experience_level || null,
+            required_skills: required_skills || null,
+            application_deadline: application_deadline || null,
+            // updated_at: new Date().toISOString() // Supabase handles this usually, or add if needed
+        })
+        .eq('id', jobId)
+        .eq('employer_id', user.id); // Extra safety
+
+    if (updateError) {
+        console.error('Update job error:', updateError);
+        throw new Error('Failed to update job listing.');
+    }
+
+    // 5. Revalidate
+    console.log(`Job ${jobId} updated successfully. Revalidating...`);
+    revalidatePath(`/jobs/${jobId}`);
+    revalidatePath('/dashboard');
+    redirect(`/jobs/${jobId}`);
+}
+
+/**
+ * Deletes a job listing.
+ * @param jobId The UUID of the job to delete.
+ */
+export async function deleteJob(jobId: string) {
+    const supabase = await createActionClient();
+
+    // 1. Authenticate
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { success: false, error: "Must be logged in" };
+    }
+
+    // 1.5 Verify employer role - CRITICAL SECURITY CHECK
+    const { data: appUser, error: roleError } = await supabase
+        .from('app_users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (roleError || !appUser || appUser.role !== 'employer') {
+        return { success: false, error: "Unauthorized: Only employers can delete jobs" };
+    }
+
+    try {
+        // 2. Delete
+        // We use deleted rows count to verify success
+        const { error, count } = await supabase
+            .from('jobs')
+            .delete({ count: 'exact' })
+            .eq('id', jobId)
+            .eq('employer_id', user.id);
+
+        if (error) {
+            console.error('Delete job error:', error);
+            return { success: false, error: "Failed to delete job" };
+        }
+
+        if (count === 0) {
+            return { success: false, error: "Job not found or unauthorized to delete." };
+        }
+
+        // 3. Revalidate
+        revalidatePath('/dashboard');
+        revalidatePath('/'); // Homepage might list it
+
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
     }
 }

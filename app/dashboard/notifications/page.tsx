@@ -12,7 +12,7 @@ export default async function NotificationsPage() {
 
   // If no user is logged in, send them to login
   if (!user) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   return (

@@ -20,7 +20,7 @@ export default async function JobApplicationsPage({
     } = await supabase.auth.getUser();
 
     if (!user) {
-        redirect("/auth/login");
+        redirect("/login");
     }
 
     // 2. Check Authorization (Is this user the employer?)
@@ -123,10 +123,10 @@ export default async function JobApplicationsPage({
                                         <td className="p-4">
                                             <span
                                                 className={`inline-flex px-2 py-1 text-xs rounded-full border ${app.status === "pending"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                                        : app.status === "reviewed"
-                                                            ? "bg-blue-100 text-blue-800 border-blue-200"
-                                                            : "bg-gray-100 text-gray-800 border-gray-200"
+                                                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                                    : app.status === "reviewed"
+                                                        ? "bg-blue-100 text-blue-800 border-blue-200"
+                                                        : "bg-gray-100 text-gray-800 border-gray-200"
                                                     }`}
                                             >
                                                 {app.status}

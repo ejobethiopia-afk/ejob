@@ -72,6 +72,20 @@ export async function signUpAction(formData: FormData) {
     const role = formData.get("role") as UserRole;
     const username = formData.get("username") as string;
     const fullName = formData.get("full_name") as string;
+    const captchaToken = formData.get("captchaToken") as string;
+
+    // CAPTCHA Verification
+    if (!captchaToken) {
+        return { error: "CAPTCHA verification is required" };
+    }
+
+    // Verify CAPTCHA with Google
+    const { verifyCaptcha } = await import("@/actions/captcha-actions");
+    const captchaResult = await verifyCaptcha(captchaToken);
+
+    if (!captchaResult.success) {
+        return { error: captchaResult.error || "CAPTCHA verification failed" };
+    }
 
     // Validation
     if (!role) {
@@ -221,7 +235,7 @@ export async function signUpAction(formData: FormData) {
     // 3. Success Redirection: Redirect to success page
     // Onboarding will be handled by middleware after email confirmation
     console.log("✅ Dual-write complete - redirecting to success page");
-    redirect("/auth/sign-up-success");
+    redirect("/sign-up-success");
 }
 
 export async function completeSeekerProfile(formData: FormData) {

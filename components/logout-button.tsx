@@ -18,10 +18,10 @@ export function LogoutButton() {
 
     try {
       const result = await logoutUser();
-      
+
       if (result?.success) {
         // Force a full page reload to clear all client-side state
-        window.location.href = '/auth/login';
+        window.location.href = '/login';
       } else {
         throw new Error('Logout was not successful');
       }
@@ -33,8 +33,8 @@ export function LogoutButton() {
   };
 
   return (
-    <Button 
-      onClick={handleLogout} 
+    <Button
+      onClick={handleLogout}
       disabled={isLoading}
       variant="ghost"
       className="w-full justify-start"

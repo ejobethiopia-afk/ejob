@@ -19,10 +19,8 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-import { MainNav } from "@/components/main-nav";
-import { SiteFooter } from "@/components/site-footer";
 import { SessionManager } from "@/components/session-manager";
-// ConversationList removed from global layout to restore previous page layout
+import { ConditionalLayout } from "@/components/conditional-layout";
 
 export default function RootLayout({
   children,
@@ -39,11 +37,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <MainNav />
-          <main className="flex-1 flex flex-col">
+          <ConditionalLayout>
             {children}
-          </main>
-          <SiteFooter />
+          </ConditionalLayout>
         </ThemeProvider>
       </body>
     </html>

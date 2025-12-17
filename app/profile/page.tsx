@@ -11,7 +11,7 @@ export default async function ProfilePage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-        redirect("/auth/login");
+        redirect("/login");
     }
 
     // 2. Fetch complete user data from app_users table

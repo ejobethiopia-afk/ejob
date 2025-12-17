@@ -77,9 +77,11 @@ export default async function JobDetailPage(props: JobDetailPageProps) {
                         <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded text-sm">
                             <Layers className="w-4 h-4" /> {jobData.category}
                         </span>
-                        <span className="flex items-center gap-1 text-sm text-white/60">
-                            <Eye className="w-4 h-4" /> {jobData.views_count || 0} views
-                        </span>
+                        {isEmployer && (
+                            <span className="flex items-center gap-1 text-sm text-white/60">
+                                <Eye className="w-4 h-4" /> {jobData.views_count || 0} views
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -88,7 +90,7 @@ export default async function JobDetailPage(props: JobDetailPageProps) {
                 <div className="grid md:grid-cols-[1fr_300px] gap-8">
                     {/* Main Content */}
                     <div className="bg-card p-8 rounded-xl shadow-xl border border-border">
-                        <ViewCounter jobId={jobId} />
+                        {isEmployer && <ViewCounter jobId={jobId} />}
                         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                             <h3 className="text-2xl font-bold border-b-2 border-[#009A44] pb-1 inline-block">Job Description</h3>
                             <span className="text-lg font-bold text-[#009A44]">{jobData.salary}</span>
