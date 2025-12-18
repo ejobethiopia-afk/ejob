@@ -54,10 +54,20 @@ export default async function DashboardPage() {
         return <div className="p-8 text-center text-red-500">Failed to load your dashboard.</div>;
     }
 
-    // Remove duplicates on the client side as an extra safety measure
+    console.log('Raw jobs fetched:', jobs?.length);
+
+    // Enhanced deduplication - remove jobs with same title, company, and location
+    // This handles cases where duplicate jobs were created with different IDs
     const uniqueJobs = jobs ? Array.from(
-        new Map(jobs.map((job: Job) => [job.id, job])).values()
+        new Map(
+            jobs.map((job: Job) => [
+                `${job.title}-${job.company_name}-${job.location}-${job.type}`,
+                job
+            ])
+        ).values()
     ) : [];
+
+    console.log('After deduplication:', uniqueJobs.length);
 
     const postedJobs = uniqueJobs as Job[];
 
