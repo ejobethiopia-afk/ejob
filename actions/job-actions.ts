@@ -648,10 +648,12 @@ export async function updateJob(formData: FormData) {
  * @param jobId The UUID of the job to delete.
  */
 export async function deleteJob(jobId: string) {
+    console.log('🗑️ deleteJob called with jobId:', jobId);
     const supabase = await createActionClient();
 
     // 1. Authenticate
     const { data: { user } } = await supabase.auth.getUser();
+    console.log('User:', user?.id);
     if (!user) {
         return { success: false, error: "Must be logged in" };
     }
@@ -664,8 +666,10 @@ export async function deleteJob(jobId: string) {
         .single();
 
     if (roleError || !appUser || appUser.role !== 'employer') {
+        console.error('❌ Role check failed:', roleError, appUser);
         return { success: false, error: "Unauthorized: Only employers can delete jobs" };
     }
+    console.log('✅ User is employer');
 
     try {
         // 2. Delete
@@ -676,14 +680,19 @@ export async function deleteJob(jobId: string) {
             .eq('id', jobId)
             .eq('employer_id', user.id);
 
+        console.log('Delete result:', { error, count });
+
         if (error) {
-            console.error('Delete job error:', error);
+            console.error('❌ Delete job error:', error);
             return { success: false, error: "Failed to delete job" };
         }
 
         if (count === 0) {
+            console.error('❌ No rows deleted (count = 0)');
             return { success: false, error: "Job not found or unauthorized to delete." };
         }
+
+        console.log('✅ Job deleted successfully! Rows affected:', count);
 
         // 3. Revalidate
         revalidatePath('/dashboard');

@@ -40,13 +40,17 @@ export function JobActionsMenu({ jobId, jobTitle }: JobActionsMenuProps) {
 
     const handleDelete = async () => {
         setShowDeleteAlert(false); // Close dialog
-        const result = await deleteJob(jobId);
 
-        if (result.success) {
-            toast.success("Job deleted successfully");
-        } else {
-            toast.error(result.error || "Failed to delete job");
-        }
+        startTransition(async () => {
+            const result = await deleteJob(jobId);
+
+            if (result.success) {
+                toast.success("Job deleted successfully");
+                router.refresh(); // Refresh the page to show updated list
+            } else {
+                toast.error(result.error || "Failed to delete job");
+            }
+        });
     };
 
     return (
