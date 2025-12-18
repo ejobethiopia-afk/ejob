@@ -16,6 +16,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
         pathname?.startsWith('/sign-up') ||
         pathname?.startsWith('/forgot-password') ||
         pathname?.startsWith('/update-password') ||
+        pathname?.startsWith('/select-role') ||
         pathname?.startsWith('/sign-up-success');
 
     return (
